@@ -25,7 +25,7 @@ jobs:
           docker-compose --version 
    - name: Build and run app with docker Compose
      run: docker-compose build
-          docker-compose up -d
+          docker-compose up - d
    - name: configure Aws credentials
      uses: aws-actions/configure-aws-credentials@v2
      with:
