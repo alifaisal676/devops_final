@@ -1,0 +1,58 @@
+name: CI/CD Docker to EC2
+
+on:
+  push:
+    branches: [ main ]
+
+jobs:
+  build-deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+    # 1️⃣ Checkout code
+    - name: Checkout repo
+      uses: actions/checkout@v3
+
+    # 2️⃣ Setup Node (if Node.js app)
+    - name: Setup Node
+      uses: actions/setup-node@v3
+      with:
+        node-version: 18
+
+    # 3️⃣ Install dependencies (if Node app)
+    - name: Install dependencies
+      run: npm install
+
+    # 4️⃣ Build Docker image
+    - name: Build Docker image
+      run: docker build -t devops-app:latest .
+
+    # 5️⃣ Login to AWS ECR
+    - name: Login to ECR
+      run: |
+        aws ecr get-login-password --region ${{ secrets.AWS_REGION }} | \
+        docker login --username AWS --password-stdin ${{ secrets.ECR_REGISTRY }}
+
+    # 6️⃣ Tag and Push Docker image
+    - name: Tag & push image to ECR
+      run: |
+        docker tag devops-app:latest ${{ secrets.ECR_REGISTRY }}/${{ secrets.ECR_REPO }}:latest
+        docker push ${{ secrets.ECR_REGISTRY }}/${{ secrets.ECR_REPO }}:latest
+
+    # 7️⃣ Deploy to EC2 via SSH
+    - name: Deploy to EC2
+      uses: appleboy/ssh-action@v1.0.3
+      with:
+        host: ${{ secrets.EC2_HOST }}
+        username: ${{ secrets.EC2_USER }}
+        key: ${{ secrets.EC2_KEY }}
+        script: |
+          # Pull latest image from ECR
+          docker pull ${{ secrets.ECR_REGISTRY }}/${{ secrets.ECR_REPO }}:latest
+          
+          # Stop old container if running
+          docker stop devops_app || true
+          docker rm devops_app || true
+          
+          # Run container
+          docker run -d --name devops_app -p 3000:3000 ${{ secrets.ECR_REGISTRY }}/${{ secrets.ECR_REPO }}:latest
