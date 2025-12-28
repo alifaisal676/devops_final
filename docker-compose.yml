@@ -1,6 +1,7 @@
 version: "3.9"
 services:
  app:
+  image: devops-app:latest
   build: .
   container_name: devops_app
   ports:
