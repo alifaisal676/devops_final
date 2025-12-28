@@ -39,7 +39,7 @@ jobs:
 
       - name: Tag and Push image to ECR
         run: |
-          docker tag devops_final_app:latest \
+          docker tag devops-app:latest \
           ${{ steps.login-ecr.outputs.registry }}/devops-app-repo:latest
 
           docker push \
